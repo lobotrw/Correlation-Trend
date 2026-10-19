@@ -5,3 +5,4 @@ python-binance
 seaborn
 pandas
 cryptocompare
+yfinance>=0.2.54

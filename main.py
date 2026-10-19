@@ -46,9 +46,21 @@ end_date = datetime.strptime('2050-12-31', '%Y-%m-%d')
 
 # Fetch historical price data for the top 10 cryptocurrencies
 price_data = pd.DataFrame()
+missing = []
 for symbol in top_10_cryptos:
     data = get_historical_data(symbol, end_date)
+    if data.empty or 'close' not in data:
+        missing.append(symbol)
+        continue
     price_data[symbol] = data['close']
+
+if 'BTC' not in price_data or option not in price_data:
+    c.error(f"Could not load price data for {', '.join(missing) or option}. "
+            "Set CRYPTOCOMPARE_API_KEY or check your network connection.")
+    st.stop()
+if missing:
+    c.warning(f"No data for {', '.join(missing)}; they are left out of the correlation matrix.")
+c.caption(f"Daily closes, last 365 days. Source: {data.attrs.get('source', 'unknown')}")
 
 # Calculate the correlation matrix
 correlation_matrix = price_data.corr()
@@ -99,13 +111,13 @@ with c:
     [c1, c2] = st.columns([1.2, 2])
 
     c1.subheader("Correlation Top :blue[10]")
-    c1.pyplot(fig1, use_container_width = True)
+    c1.pyplot(fig1, width='stretch')
     c2.subheader(f":orange[{option}] TREND")
-    c2.pyplot(fig2, use_container_width = True)
+    c2.pyplot(fig2, width='stretch')
     c1.divider()
     c2.divider()
     c1.subheader("Adjusted Trend Values")
-    c1.dataframe(trend_table.style.highlight_max(subset="Adjusted Trend", color="#5396ec"), use_container_width = True, hide_index=True)
+    c1.dataframe(trend_table.style.highlight_max(subset="Adjusted Trend", color="#5396ec"), width='stretch', hide_index=True)
     c2.metric(label="Overall Market Crypto Trend (AVG)", value=avg_tren)
 
     with c2.expander("DESCRIPTION:"):

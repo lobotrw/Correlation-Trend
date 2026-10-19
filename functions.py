@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 import streamlit as st
@@ -25,14 +27,42 @@ def get_market_caps():
 
 
 
-# Function to fetch historical data from Binance
-def get_historical_data(symbol, end_date):
-    cryptocompare.cryptocompare._set_api_key_parameter("8fcc98eb2d8de315ea41c547c2565e23773f9ec70d79d89546680c8820203821")
-    data = cryptocompare.get_historical_price_day(symbol, currency='USD', toTs=end_date, limit=365)
-    df = pd.DataFrame(data)
-    if 'time' in df.columns:
-        df['time'] = pd.to_datetime(df['time'], unit='s')
-        df.set_index('time', inplace=True)
+# Yahoo Finance tickers used when CryptoCompare is unavailable
+YAHOO_TICKERS = {"UNI": "UNI7083-USD"}
+
+
+def _from_yahoo(symbol, limit):
+    import yfinance as yf
+    ticker = YAHOO_TICKERS.get(symbol, f"{symbol}-USD")
+    df = yf.download(ticker, period="2y", interval="1d", auto_adjust=True,
+                     multi_level_index=False, progress=False)
+    if df.empty:
+        return pd.DataFrame()
+    df = df.rename(columns=str.lower)[["close"]].iloc[-(limit + 1):]
+    df.index.name = "time"
+    return df
+
+
+# Function to fetch historical data (CryptoCompare if an API key is set, else Yahoo Finance)
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_historical_data(symbol, end_date, limit=365):
+    # CryptoCompare (now CoinDesk Data) requires an API key since 2025. Read it from the
+    # environment instead of hard-coding it; without a key, fall back to Yahoo Finance.
+    key = os.environ.get("CRYPTOCOMPARE_API_KEY")
+    if key:
+        cryptocompare.cryptocompare._set_api_key_parameter(key)
+        try:
+            data = cryptocompare.get_historical_price_day(symbol, currency='USD', toTs=end_date, limit=limit)
+        except Exception:
+            data = None
+        if data:
+            df = pd.DataFrame(data)
+            df['time'] = pd.to_datetime(df['time'], unit='s')
+            df.set_index('time', inplace=True)
+            df.attrs["source"] = "CryptoCompare"
+            return df
+    df = _from_yahoo(symbol, limit)
+    df.attrs["source"] = "Yahoo Finance"
     return df
 
 def get_trend_val(_data):
