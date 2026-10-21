@@ -1,47 +1,14 @@
 ### Correlation Trend Application
 
-This Streamlit-based web application allows users to analyze the correlation trends of the top 10 cryptocurrencies in relation to Bitcoin (BTC) and visualize these trends in a table.
+This Streamlit app compares the 10 largest cryptocurrencies (by live market cap, excluding stablecoins and wrapped/staked tokens) with Bitcoin, using daily data for the last 365 complete UTC days.
 
-#### Key Features:
+#### What is calculated
 
-1. **Market Data Retrieval**:
-   - Fetches the top 10 cryptocurrencies by market cap.
-   - Defines a date range for data analysis from January 1, 2023, to December 31, 2025.
+1. **Ranking and market caps:** live from CoinGecko. If CoinGecko is unavailable, the app uses a fixed coin list and shows **no** market caps.
+2. **Prices:** daily closes from CryptoCompare (if `CRYPTOCOMPARE_API_KEY` is set) or Yahoo Finance. Today's still-forming daily candle is excluded.
+3. **Correlation:** of daily **returns**. Correlating price levels inflates the values, because any two trending series look correlated.
+4. **Own trend per coin:** from the 25-day SMA. The slope over the last 5 days is +1 when it is above +1 %, −1 when it is below −1 %, and 0 when the SMA is flat. Hysteresis stops it flipping on daily noise. Each value uses only past data.
+5. **Market trend:** the average of each coin's **own** trend, market-cap-weighted (when live caps are available) and equal-weight.
+6. **BTC trend × corr.:** a BTC-beta view of where a coin "should" go if it follows BTC. It is not the coin's own trend.
 
-2. **Historical Price Data**:
-   - Fetches historical price data for the top 10 cryptocurrencies within the specified date range.
-   - Stores the closing prices of these cryptocurrencies in a DataFrame.
-
-3. **Correlation Analysis**:
-   - Calculates the correlation matrix for the closing prices of the top 10 cryptocurrencies.
-   - Creates a heatmap to visualize the correlation matrix, highlighting the relationships between different cryptocurrencies.
-
-4. **Coins Trend Analysis**:
-   - Fetches historical price data for coins.
-   - Calculates the 25-period Simple Moving Average (SMA) for coins.
-   - Determines the binary trend for BTC based on the SMA, categorizing the trend as:
-     - 1 (upward trend) if the current SMA value is higher than the previous two values.
-     - -1 (downward trend) if the current SMA value is lower than the previous two values.
-
-5. **Adjusted Trend Calculation**:
-   - Multiplies the correlation values by the BTC trend to get adjusted trend values.
-   - Creates a DataFrame to display the adjusted trend values for each cryptocurrency.
-   - Calculates the average of the adjusted trend values.
-
-6. **Additional Information**:
-   - Show AVG of all Adjusted Trend Values, which is an overall Crypto Market Trend
-   - Provides an "About" section for additional context or information about the application.
-
-### Usage Instructions:
-
-1. **View Correlation Heatmap**:
-   - Analyze the correlation heatmap to understand the relationships between the top 10 cryptocurrencies.
-
-2. **Analyze coins Trend**:
-   - Review the coins trend chart to observe coins price movements and it's trends.
-
-3. **Review Adjusted Trends**:
-   - Check the adjusted trend values for each cryptocurrency to see it trends.
-   - Look at the average adjusted trend value for a summary statistic.
-
-This application provides a comprehensive tool for cryptocurrency traders and analysts to understand market correlations and trends, helping them make informed investment decisions.
+This is descriptive information, not financial advice.
